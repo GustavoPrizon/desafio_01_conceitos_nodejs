@@ -26,21 +26,23 @@ function checksExistsUserAccount(request, response, next) {
 
 app.post('/users', (request, response) => {
   // Complete aqui
-  const { name, username, todos } = request.body
-  const usersExists = users.some(user => user.username === username)
+  const { name, username } = request.body
+  const usersExists = users.find(user => user.username === username)
 
   if(usersExists){
-    return response.status(404).json({error: 'Username already exists!'})
+    return response.status(400).json({error: 'Username already exists!'})
   }
 
-  users.push({
+  const user = {
     id: uuidv4(),
     name,
     username,
-    todos
-  })
+    todos:[],
+  }
 
-  return response.status(201).json(users)
+  users.push(user)
+
+  return response.status(201).json(user)
 });
 
 app.get('/todos', checksExistsUserAccount, (request, response) => {
@@ -52,22 +54,20 @@ app.get('/todos', checksExistsUserAccount, (request, response) => {
 
 app.post('/todos', checksExistsUserAccount, (request, response) => {
   // Complete aqui
-  const { title, deadline, done } = request.body
   const { user } = request
+  const { title, deadline } = request.body
 
-  const dateFormat = new Date(deadline + ' 00:00')
-
-  const todosOperation = {
+  const todo = {
     id: uuidv4(),
     title,
-    done,
-    deadline: dateFormat,
-    created_ate: new Date()
+    done: false,
+    deadline: new Date(deadline),
+    created_at: new Date()
   }
 
-  user.todos.push(todosOperation)
+  user.todos.push(todo)
   
-  return response.status(201).json(todosOperation)
+  return response.status(201).json(todo)
 });
 
 app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
@@ -76,36 +76,33 @@ app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
   const { id } = request.params
   const { user } = request
 
-  const todos = user.todos.find(todos => todos.id === id)
+  const todo = user.todos.find(todo => todo.id === id)
 
-  if(!todos){
+  if(!todo){
     return response.status(404).json({error: 'Id incorrect!'})
   }
 
-  const dateFormat = new Date(deadline + ' 00:00')
+  todo.title = title
+  todo.deadline = new Date(deadline)
 
-  todos.title = title
-  todos.deadline = dateFormat
-
-  return response.status(201).send()
+  return response.json(todo)
 
 });
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
   // Complete aqui
-  const { done } = request.body
   const { id } = request.params
   const { user } = request
 
-  const todos = user.todos.find(todos => todos.id === id)
+  const todo = user.todos.find(todo => todo.id === id)
 
-  if(!todos){
+  if(!todo){
     return response.status(404).json({error: 'Id incorrect!'})
   }
 
-  todos.done = done
+  todo.done = true
 
-  return response.status(201).send()
+  return response.json(todo)
 });
 
 app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
@@ -113,15 +110,15 @@ app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
   const { id } = request.params
   const { user } = request
 
-  const todos = user.todos.find(todos => todos.id === id)
+  const todoIndex = user.todos.findIndex(todo => todo.id === id)
 
-  if(!todos){
+  if(todoIndex === -1){
     return response.status(404).json({error: 'Id incorrect!'})
   }
 
-  user.todos.splice(todos, 1)
+  user.todos.splice(todoIndex, 1)
 
-  return response.status(201).send()
+  return response.status(204).json()
 });
 
 module.exports = app;
